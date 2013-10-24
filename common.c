@@ -4,6 +4,14 @@
 
 #include "optar.h"
 
+/* Format variables */
+/* xcrosses A4 65, US Letter 67. */
+unsigned xcrosses  = 65; /* Number of crosses horizontally */
+/* ycrosses A4 93, US Letter 87. */
+unsigned ycrosses  = 93; /* Number of crosses vertically */
+unsigned text_height=24;
+
+
 /* Coordinates don't count with the border - 0,0 is upper left corner of the
  * first cross! */
 int is_cross(unsigned x, unsigned y)
@@ -66,4 +74,19 @@ unsigned long golay(unsigned long in)
 	return golay_codes[in&4095];
 }
 
+/* Read format from the command line*/
+void parse_format(char *format)
+{
+	unsigned dummy;
 
+	sscanf(format,"%u-%u-%u-%u-%u-%u-%u-%u",
+			&dummy,
+			&xcrosses,
+			&ycrosses,
+			&dummy,
+			&dummy,
+			&dummy,
+			&dummy,
+			&text_height);
+	fprintf(stderr,"Format: text height=%u\n", text_height);
+}

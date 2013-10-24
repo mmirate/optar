@@ -37,7 +37,7 @@ struct que{
 
 static unsigned width, height; /* In pixels, not it symbols! The whole image including
 			   border, white surrounding etc. */
-static unsigned char *ary; /* Allocated to width*height */
+static unsigned char *ary;    /* Allocated to width*height */
 static unsigned char *newary; /* Allocated to width*height */
 
 static unsigned long histogram[256];
@@ -53,9 +53,8 @@ static unsigned long corners[4][2]; /* UL, UR, LL, LR / x, y. Integers in pixel 
 			   left corners. */
 static unsigned long leftedge, rightedge, topedge, bottomedge; /* Coordinates,
 	minima/maxima of the corner coordinates. */
-static double crosses[XCROSSES][YCROSSES][2]; /* [x][y][coord]. Integers in pixel
-					  upper left corners. */
-static float cutlevels[XCROSSES][YCROSSES]; /* Each cross has it's own cutlevel
+static double ***crosses; /* [x][y][coord]. Integers in pixel upper left corners. */
+static float **cutlevels; /* Each cross has it's own cutlevel
 	based on how it came out printed. */
 static int chalf_fine; /* Larger chalf for fine search */
 static int chalf; /* In the input image, measured in input image pixels!
@@ -98,7 +97,6 @@ static FILE *input_stream;
 static double output_gamma=0.454545; /* What gamma the debug output has
 			      (output number=number of photons ^ gamma) */
 static long format_height; /* Used to be the HEIGHT macro. */
-static unsigned text_height=24;
 static unsigned long golay_stats[5]; /* 0, 1, 2, 3, 4 damaged bits */
 
 /* -------------------- MAGIC CONSTANTS -------------------- */
@@ -798,11 +796,11 @@ static void sync_crosses(void)
 		(double)(BORDER+CHALF)/format_height);
 
 	fprintf(stderr,"Finding crosses (%u lines), numbers indicate "
-			"individual cutlevels:\n", YCROSSES);
+			"individual cutlevels:\n", ycrosses);
 
-	for (cy=0;cy<YCROSSES;cy++){
+	for (cy=0;cy<ycrosses;cy++){
 		fprintf(stderr,"%3u: ",cy);
-		for (cx=0;cx<XCROSSES;cx++){
+		for (cx=0;cx<xcrosses;cx++){
 			if (cx>0){
 				/* Copy from left */
 				crosses[cx][cy][0]=crosses[cx-1][cy][0]+rightx;
@@ -835,8 +833,8 @@ static void bit_coord(double *xout, double *yout, float *cutlevel,
 	else cx=(x-CHALF)/CPITCH;
 	if (y<CHALF) cy=0;
 	else cy=(y-CHALF)/CPITCH;
-	if (cx>XCROSSES-2) cx=XCROSSES-2;
-	if (cy>YCROSSES-2) cy=YCROSSES-2;
+	if (cx>xcrosses-2) cx=xcrosses-2;
+	if (cy>ycrosses-2) cy=ycrosses-2;
 
 	/* Now subtrack cross coordinate */
 	x-=cx*CPITCH+CHALF;
@@ -1249,8 +1247,8 @@ static void print_marks(void)
 	mark(corners[2][0], corners[2][1]);
 	mark(corners[3][0], corners[3][1]);
 
-	for (cy=0;cy<YCROSSES;cy++)
-		for (cx=0;cx<XCROSSES;cx++){
+	for (cy=0;cy<ycrosses;cy++)
+		for (cx=0;cx<xcrosses;cx++){
 			mark(crosses[cx][cy][0],crosses[cx][cy][1]);
 			mark(
 				 PSHIFTX(crosses[cx][cy][0], chalf, 0)
@@ -1384,7 +1382,22 @@ static void process_minmax(void)
  * loaded from the commandline. */
 static void init_dimensions(void)
 {
+	int ix, iy;
+
 	format_height=2*BORDER+DATA_HEIGHT+text_height;
+
+	crosses = (double ***) malloc((int)(sizeof(double **)* xcrosses));
+	for(ix = 0; ix < xcrosses; ix++) {
+		crosses[ix] = (double **) malloc((int)(sizeof(double *)* ycrosses));
+		for(iy = 0; iy < ycrosses; iy++) {
+			crosses[ix][iy] = (double *) malloc((int)(sizeof(double) * 2));
+		}
+	}
+
+	cutlevels = (float **) malloc((int)(sizeof(float *) * xcrosses));
+	for(ix = 0; ix < xcrosses; ix++) {
+		cutlevels[ix] = (float *) malloc((int) (sizeof(float) * ycrosses));
+	}
 }
 
 static void que_write(unsigned x, unsigned y)
@@ -1654,22 +1667,6 @@ static void process_files(char *base)
 					 input_stream! */
 	}
 
-}
-
-static void parse_format(char *format)
-{
-	unsigned dummy;
-
-	sscanf(format,"%u-%u-%u-%u-%u-%u-%u-%u",
-			&dummy,
-			&dummy,
-			&dummy,
-			&dummy,
-			&dummy,
-			&dummy,
-			&dummy,
-			&text_height);
-	fprintf(stderr,"Format: text height=%u\n", text_height);
 }
 
 /* argv:

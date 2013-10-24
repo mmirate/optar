@@ -16,7 +16,7 @@
 #define HEIGHT (2*BORDER+DATA_HEIGHT+TEXT_HEIGHT)
 #define TEXT_HEIGHT 24
 
-static unsigned char ary[WIDTH*HEIGHT];
+static unsigned char * ary = NULL;
 static unsigned char *file_label=(unsigned char *)""; /* The filename written in the
 					file_label */
 static char *output_filename; /* The output filename */
@@ -35,7 +35,7 @@ void dump_ary(void)
 		"255\n"
 		,WIDTH, HEIGHT);
 
-	fwrite(ary, sizeof(ary), 1, output_stream);
+	fwrite(ary, sizeof(unsigned char) * WIDTH * HEIGHT, 1, output_stream);
 }
 
 /* Only the LSB is significant. Writes hamming-encoded bits. The sequence number
@@ -153,12 +153,12 @@ void text_block (destx, srcx, width)
 void label(void)
 {
 	unsigned x=0;
-	static char txt[DATA_WIDTH/TEXT_WIDTH];
+	char *txt = (char*) malloc((int) sizeof(char)*DATA_WIDTH/TEXT_WIDTH);
 	unsigned char *ptr;
 	unsigned txtlen;
 
-	snprintf(txt, sizeof txt, "  0-%u-%u-%u-%u-%u-%u-%u %u/%u %s"
-		, XCROSSES, YCROSSES, CPITCH, CHALF
+	snprintf(txt, sizeof(char)*DATA_WIDTH/TEXT_WIDTH, "  0-%u-%u-%u-%u-%u-%u-%u %u/%u %s"
+		, xcrosses, ycrosses, CPITCH, CHALF
 		, FEC_ORDER, BORDER, TEXT_HEIGHT
 		,file_number,n_pages
 		, (char *)(void *)file_label);
@@ -175,11 +175,13 @@ void label(void)
 		}
 	}
 
+	free(txt);
+
 }
 
 void format_ary(void)
 {
-	memset(ary, 0xff, sizeof(ary)); /* White */
+	memset(ary, 0xff, sizeof(unsigned char) * WIDTH * HEIGHT); /* White */
 	border();
 	crosses();
 	label();
@@ -296,19 +298,29 @@ void open_input_file(char *fname)
 	}
 }
 
+/* Dimensions were originally fixed in macros. Now they are variable and can be
+ * passed through commandline. This routine reclaculates them after they are
+ * loaded from the commandline. */
+static void init_dimensions(void)
+{
+	ary=(unsigned char*)malloc((int)(sizeof(char)*WIDTH*HEIGHT));
+}
+
 /* argv format:
  * 1st arg - input file
  * 2nd arg(optional) - label and output filename base */
 int main(int argc, char **argv)
 {
 
-	if (argc<2){
-		fprintf(stderr,"Usage: optar <input file> [filename base]\n");
+	if (argc<3){
+		fprintf(stderr,"Usage: optar <format> <input file> [filename base]\n");
 		exit(1);
 	}
-	open_input_file(argv[1]);
+	parse_format(argv[1]);
+	init_dimensions();
+	open_input_file(argv[2]);
 
-	if (argc>=3) file_label=base=(void *)argv[2];
+	if (argc>=3) file_label=base=(void *)argv[3];
 	output_filename_buffer_size=strlen((char *)(void *)base)+1+4+1+3+1;
 	output_filename=malloc(output_filename_buffer_size);
 	if (!output_filename){

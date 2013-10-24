@@ -8,14 +8,9 @@
 		   */
 #define CPITCH 24 /* Distance between cross centers */
 
-/* XCROSSES A4 65, US Letter 67. */
-#define XCROSSES 65 /* Number of crosses horizontally */
-/* YCROSSES A4 93, US Letter 87. */
-#define YCROSSES 93 /* Number of crosses vertically */
-
-#define DATA_WIDTH (CPITCH*(XCROSSES-1)+2*CHALF) /* The rectangle occupied by
+#define DATA_WIDTH (CPITCH*(xcrosses-1)+2*CHALF) /* The rectangle occupied by
 						    the data and crosses */
-#define DATA_HEIGHT (CPITCH*(YCROSSES-1)+2*CHALF)
+#define DATA_HEIGHT (CPITCH*(ycrosses-1)+2*CHALF)
 #define WIDTH (2*BORDER+DATA_WIDTH) /* In pixels, including the border */
 /* In pixels, including the border and the label */
 
@@ -26,7 +21,7 @@
 /* Properties of the narrow horizontal strip, with crosses */
 #define NARROWHEIGHT (2*CHALF)
 #define GAPWIDTH (CPITCH-2*CHALF)
-#define NARROWWIDTH (GAPWIDTH*(XCROSSES-1)) /* Useful width */
+#define NARROWWIDTH (GAPWIDTH*(xcrosses-1)) /* Useful width */
 #define NARROWPIXELS (NARROWHEIGHT*NARROWWIDTH) /* Useful pixels */
 
 /* Properties of the wide horizontal strip, without crosses */
@@ -39,7 +34,7 @@
 #define REPPIXELS (WIDEPIXELS+NARROWPIXELS)
 
 /* Total bits before hamming including the unused */
-#define TOTALBITS ((long)REPPIXELS*(YCROSSES-1)+NARROWPIXELS)
+#define TOTALBITS ((long)REPPIXELS*(ycrosses-1)+NARROWPIXELS)
 
 /* Hamming codes with parity */
 #define FEC_ORDER 1 /* Can be 2 to 5 inclusive. 
@@ -68,6 +63,7 @@
 extern unsigned long parity(unsigned long in);
 extern int is_cross(unsigned x, unsigned y);
 extern void seq2xy(int *x, int *y, unsigned seq);
+extern void parse_format(char *format);
 
 /* Counts number of '1' bits */
 unsigned ones(unsigned long in);
@@ -75,3 +71,8 @@ unsigned ones(unsigned long in);
 /* Golay codes */
 unsigned long golay(unsigned long in);
 extern unsigned long golay_codes[4096];
+
+/* Format variables */
+extern unsigned xcrosses; /* Number of crosses horizontally */
+extern unsigned ycrosses; /* Number of crosses vertically */
+extern unsigned text_height;
