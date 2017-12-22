@@ -1,0 +1,8 @@
+[package]
+name = "optar-rs"
+version = "0.1.0"
+authors = ["Milo Mirate <mmirate@gatech.edu>"]
+
+[dependencies]
+image = "*"
+num = "^0.1"
